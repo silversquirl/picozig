@@ -11,8 +11,8 @@ pub fn build(b: *std.build.Builder) void {
 
     const exe = b.addExecutable("main.elf", "src/main.zig");
     addBoot2(b, exe, target, "copy2ram");
-    exe.want_lto = false;
     exe.linker_script = std.build.FileSource.relative("src/linker.ld");
+    exe.single_threaded = true;
     exe.setTarget(target);
     exe.setBuildMode(mode);
     exe.install();
@@ -29,6 +29,7 @@ fn addBoot2(b: *std.build.Builder, exe: *std.build.LibExeObjStep, target: std.zi
     const impl = b.addObject(variant, b.fmt("src/boot2/{s}.zig", .{variant}));
     impl.addPackage(rp_pkg);
 
+    impl.single_threaded = true;
     impl.force_pic = true;
     impl.setTarget(target);
     impl.setBuildMode(.ReleaseSmall);
@@ -40,6 +41,7 @@ fn addBoot2(b: *std.build.Builder, exe: *std.build.LibExeObjStep, target: std.zi
         std.build.FileSource{ .generated = &checksum.output },
     );
 
+    check.single_threaded = true;
     check.force_pic = true;
     check.setBuildMode(.ReleaseSmall);
     check.setTarget(target);

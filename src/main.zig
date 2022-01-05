@@ -1,5 +1,6 @@
 const std = @import("std");
 const rp = @import("rp2040.zig");
+const event = @import("event.zig");
 
 comptime {
     rp.intr.exportVectors();
@@ -24,12 +25,22 @@ pub fn main() void {
     sio.gpio_oe.set(25);
 
     flash(3, 5);
+
+    event.loop.spawn(mainTask, .{}) catch |err| @panic(@errorName(err));
+    nosuspend {
+        event.loop.run();
+    }
+}
+
+pub fn mainTask() void {
+    flash(3, 5);
     fibFlash() catch {};
     flash(20, 1);
 }
 
 pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace) noreturn {
-    std.debug.assert(msg.len > 0);
+    var panic_buf: [256]u8 = undefined;
+    std.mem.copy(u8, &panic_buf, msg);
     while (true) {
         flash(5, 3);
     }

@@ -4,8 +4,7 @@ const intr = @import("intr.zig");
 
 const Allocator = std.mem.Allocator;
 
-// std.mem.page_size is a lie, we use 1024 byte pages (because I said so :)
-pub const page_size: usize = 1024;
+pub const page_size: usize = std.mem.page_size;
 const max_memory_size = addr.sram4_base - addr.sram_base;
 
 extern var _program_end: anyopaque;
@@ -17,10 +16,10 @@ pub fn init() void {
 
     // SRAM4 is the end of the striped memory area
     // We end here because we use SRAM4 and SRAM5 as stack
-    const memory_len = addr.sram4_base - memory_start;
+    const memory_end = addr.sram4_base - memory_start;
 
     global_page_alloc = .{
-        .memory = @ptrCast([*]u8, &_program_end)[0..memory_len],
+        .memory = @intToPtr([*]u8, memory_start)[0..memory_end],
     };
 }
 
