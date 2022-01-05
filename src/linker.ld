@@ -17,7 +17,30 @@ SECTIONS {
 		ASSERT(SIZEOF(.boot2) == 256, "boot2 must be exactly 256 bytes");
 	} > BOOT2_SRAM AT> FLASH
 
+	.program_header : {
+		# Code
+		LONG(SIZEOF(.vectors) + SIZEOF(.text))
+		# Constant data
+		LONG(SIZEOF(.rodata))
+		# Mutable data
+		LONG(SIZEOF(.data))
+		# Zeroed memory
+		LONG(SIZEOF(.bss))
+
+		ASSERT(
+			SIZEOF(.vectors) +
+			SIZEOF(.text) +
+			SIZEOF(.rodata) +
+			SIZEOF(.data) +
+			SIZEOF(.bss) ==
+			_program_end - _program_start,
+			"Program size must match sum of section sizes"
+		);
+	} > FLASH
+
 	.vectors : {
+		_program_start = .;
+
 		KEEP(*(.vectors))
 		ASSERT(SIZEOF(.vectors) > 0, "Missing vector table");
 	} > SRAM AT> FLASH
@@ -36,6 +59,8 @@ SECTIONS {
 	.bss : {
 		*(.bss.*)
 	} > SRAM
+
+	_program_end = .;
 
 	/DISCARD/ : {
 		*(.ARM.exidx)

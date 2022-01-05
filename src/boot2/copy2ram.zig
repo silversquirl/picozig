@@ -8,6 +8,15 @@ pub const Boot2Config = struct {
 };
 const config = std.meta.globalOption("boot2_config", Boot2Config) orelse Boot2Config{};
 
+const program_base = rp.addr.xip_base + 0x100;
+const program_start = program_base + @sizeOf(ProgramHeader);
+const ProgramHeader = extern struct {
+    code: u32,
+    rodata: u32,
+    data: u32,
+    zeroes: u32,
+};
+
 export fn _flashboot_stage2() linksection(".boot2") void {
     // Disable SSI so we can do config
     rp.regs.xip_ssi.ssienr = 0;
@@ -34,13 +43,20 @@ export fn _flashboot_stage2() linksection(".boot2") void {
     // Enable SSI again
     rp.regs.xip_ssi.ssienr = 1;
 
+    // Read program header
+    const header = @intToPtr(*const ProgramHeader, program_base);
+    const program_len = header.code + header.rodata + header.data;
+
     // Copy data
     const mem = @intToPtr([*]align(4) u8, rp.addr.sram_base);
-    const flash = @intToPtr([*]align(4) u8, rp.addr.xip_base + 0x100);
-    // const len = rp.addr.sram_end - rp.addr.sram_base;
-    const len = 10 * 1024;
-    for (flash[0..len]) |b, i| {
+    const flash = @intToPtr([*]align(4) u8, program_start);
+    for (flash[0..program_len]) |b, i| {
         mem[i] = b;
+    }
+
+    // Zero memory
+    for (mem[program_len .. program_len + header.zeroes]) |*b| {
+        b.* = 0;
     }
 
     // Disable SSI before jumping to user code
