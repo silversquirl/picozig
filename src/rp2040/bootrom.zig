@@ -19,15 +19,6 @@ pub fn init() void {
     // TODO: Load functions and data
 }
 
-pub fn panic(msg: []const u8, stack_trace: ?*std.builtin.StackTrace) noreturn {
-    _ = msg;
-    _ = stack_trace;
-    @breakpoint();
-    while (true) {
-        asm volatile ("wfi");
-    }
-}
-
 const BootromHeader = extern struct {
     stack_ptr: u32,
     boot_reset_handler: u32,

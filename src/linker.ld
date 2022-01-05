@@ -17,10 +17,6 @@ SECTIONS {
 		ASSERT(SIZEOF(.boot2) == 256, "boot2 must be exactly 256 bytes");
 	} > BOOT2_SRAM AT> FLASH
 
-	.flash_size : {
-		KEEP(*(.flash_size));
-	} > FLASH
-
 	.vectors : {
 		KEEP(*(.vectors))
 		ASSERT(SIZEOF(.vectors) > 0, "Missing vector table");

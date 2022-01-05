@@ -40,7 +40,6 @@ export fn _flashboot_stage2() linksection(".boot2") void {
     // const len = rp.addr.sram_end - rp.addr.sram_base;
     const len = 10 * 1024;
     for (flash[0..len]) |b, i| {
-        // if (i % 1024 == 0) @breakpoint();
         mem[i] = b;
     }
 
