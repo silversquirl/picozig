@@ -3,6 +3,7 @@
 const std = @import("std");
 const root = @import("root");
 const addr = @import("addr.zig");
+const heap = @import("heap.zig");
 const regs = @import("regs.zig");
 
 pub var vectors linksection(".vectors") = std.meta.globalOption("vectors", VectorTable) orelse VectorTable{};
@@ -16,6 +17,37 @@ fn ExportVectorsHelper() type {
             @export(vectors, .{ .name = "vectors", .section = ".vectors" });
         }
     };
+}
+
+/// Disable interrupts. Returns previous state
+pub inline fn disable() bool {
+    const prev = asm (
+        \\mrs %[prev], PRIMASK
+        : [prev] "=r" (-> bool),
+    );
+    asm volatile ("cpsid i");
+    return prev;
+}
+/// Enable interrupts. Returns previous state
+pub inline fn enable() bool {
+    const prev = asm (
+        \\mrs %[prev], PRIMASK
+        : [prev] "=r" (-> bool),
+    );
+    asm volatile ("cpsie i");
+    return prev;
+}
+/// Restore interrupt mask
+pub inline fn restore(mask: bool) void {
+    asm volatile (
+        \\msr PRIMASK, %[prev]
+        :
+        : [prev] "r" (mask),
+    );
+}
+/// Wait for an interrupt to occur
+pub inline fn wait() void {
+    asm volatile ("wfi");
 }
 
 pub const VectorTable = extern struct {
@@ -91,6 +123,8 @@ pub export fn _start() callconv(.C) noreturn {
     });
 
     // TODO: unreset stuff
+
+    heap.init();
 
     root.main();
     while (true) {

@@ -5,6 +5,10 @@ comptime {
     rp.intr.exportVectors();
 }
 pub const _start = rp.intr._start;
+pub const os = rp.os;
+
+// FIXME: some weird shit is going on which means I can only compile in debug mode atm and sometimes it just doesn't work.
+// Seems to be correlated with picotool displaying two "loading into flash" bars; cba to debug further atm
 
 pub fn main() void {
     rp.regs.resets.unreset(&.{ .io_bank0, .pads_bank0 });
@@ -19,13 +23,60 @@ pub fn main() void {
 
     sio.gpio_oe.set(25);
 
-    while (true) {
-        sio.gpio_out.flip(25);
+    flash(3, 5);
+    fibFlash() catch {};
+    flash(20, 1);
+}
 
-        // ~500ms delay
-        var i: u32 = 0;
-        while (i < 50_000) : (i += 1) {
-            std.mem.doNotOptimizeAway(i);
-        }
+pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace) noreturn {
+    std.debug.assert(msg.len > 0);
+    while (true) {
+        flash(5, 3);
+    }
+}
+
+fn fibFlash() !void {
+    flash(1, 1);
+
+    // Create an array of fibonacci numbers
+    var fibs = std.ArrayList(u32).init(std.heap.page_allocator);
+    defer fibs.deinit();
+    try fibs.append(0);
+    try fibs.append(1);
+
+    // When we inevitably OOM, flash relative to the number of fib numbers we calculated
+    defer {
+        flash(1, 20);
+        flash(fibs.items.len / 10000, 10);
+    }
+
+    // Compute until we run out of space
+    while (true) {
+        const n = fibs.items.len;
+        // Not really how fib works but we don't wanna overflow before we've properly tested the allocator
+        try fibs.append(fibs.items[n - 1] +% fibs.items[n - 2]);
+    }
+}
+
+fn flash(n: u32, strobe_speed: u32) void {
+    const sio = rp.regs.sio;
+
+    const delay_time = strobe_speed * 3000;
+
+    var i: u32 = 0;
+    while (i < n) : (i += 1) {
+        sio.gpio_out.set(25);
+        delay(delay_time);
+        sio.gpio_out.clear(25);
+        delay(delay_time);
+    }
+
+    delay(5 * delay_time);
+}
+
+fn delay(length: u32) void {
+    var i: u32 = 0;
+    while (i < length) : (i += 1) {
+        std.mem.doNotOptimizeAway(i);
     }
 }

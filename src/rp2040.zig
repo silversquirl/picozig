@@ -8,3 +8,7 @@ pub const bootrom = @import("rp2040/bootrom.zig");
 pub const gpio = @import("rp2040/gpio.zig");
 pub const intr = @import("rp2040/intr.zig");
 pub const regs = @import("rp2040/regs.zig");
+
+pub const os = struct {
+    pub const heap = @import("rp2040/heap.zig");
+};

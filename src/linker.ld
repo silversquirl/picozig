@@ -18,22 +18,23 @@ SECTIONS {
 	} > BOOT2_SRAM AT> FLASH
 
 	.program_header : {
-		# Code
-		LONG(SIZEOF(.vectors) + SIZEOF(.text))
-		# Constant data
-		LONG(SIZEOF(.rodata))
-		# Mutable data
-		LONG(SIZEOF(.data))
-		# Zeroed memory
+		_code_len = ADDR(.rodata) - ADDR(.vectors);
+		ASSERT(_code_len == LOADADDR(.rodata) - LOADADDR(.vectors),
+			"vma code length does not match lma");
+		LONG(_code_len);
+
+		_rodata_len = ADDR(.data) - ADDR(.rodata);
+		ASSERT(_rodata_len == LOADADDR(.data) - LOADADDR(.rodata),
+			"vma rodata length does not match lma");
+		LONG(_rodata_len);
+
+		_data_len = ADDR(.bss) - ADDR(.data);
+		LONG(_data_len);
+
 		LONG(SIZEOF(.bss))
 
 		ASSERT(
-			SIZEOF(.vectors) +
-			SIZEOF(.text) +
-			SIZEOF(.rodata) +
-			SIZEOF(.data) +
-			SIZEOF(.bss) ==
-			_program_end - _program_start,
+			_code_len + _rodata_len + _data_len + SIZEOF(.bss) == _program_end - _program_start,
 			"Program size must match sum of section sizes"
 		);
 	} > FLASH
