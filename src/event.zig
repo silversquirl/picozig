@@ -22,13 +22,12 @@ pub const Loop = struct {
         if (self.taskCount() >= task_limit) return error.OutOfMemory;
 
         const spawner = struct {
-            fn f(self_: *Loop, args_: std.meta.ArgsTuple(@TypeOf(func))) noreturn {
+            fn f(self_: *Loop, args_: std.meta.ArgsTuple(@TypeOf(func))) void {
                 suspend {}
                 @call(.{}, func, args_);
                 suspend {
                     self_.allocator.destroy(@frame());
                 }
-                unreachable;
             }
         }.f;
         const frame = try self.allocator.create(@Frame(spawner));

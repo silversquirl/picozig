@@ -39,8 +39,9 @@ pub fn mainTask() void {
 }
 
 pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace) noreturn {
-    var panic_buf: [256]u8 = undefined;
-    std.mem.copy(u8, &panic_buf, msg);
+    var msg_buf: [256]u8 = undefined;
+    std.mem.copy(u8, &msg_buf, msg);
+    std.mem.doNotOptimizeAway(msg_buf);
     while (true) {
         flash(5, 3);
     }
@@ -72,7 +73,7 @@ fn fibFlash() !void {
 fn flash(n: u32, strobe_speed: u32) void {
     const sio = rp.regs.sio;
 
-    const delay_time = strobe_speed * 3000;
+    const delay_time = strobe_speed * 30000;
 
     var i: u32 = 0;
     while (i < n) : (i += 1) {
